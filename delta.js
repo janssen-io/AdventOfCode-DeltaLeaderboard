@@ -58,12 +58,21 @@ function calculate(leaderboard) {
         }
     }
 
+    let countPart2ByMember = {}
+    for(let day of days) {
+        for(let time of day.times) {
+            countPart2ByMember[time.name] = (countPart2ByMember[time.name] || 0) + 1
+        }
+    }
+
     let result = [];
     for(let member of Object.keys(totalPointsPerMember)) {
         result.push({
             name: member,
             points: totalPointsPerMember[member],
-            total_time_in_h: Math.round(totalTimePerMember[member] / 360) / 10 });
+            total_time_in_h: Math.round(totalTimePerMember[member] / 360) / 10,
+            completed_days: countPart2ByMember[member]
+        });
     }
 
     console.log("High Score (delta)");
