@@ -116,22 +116,16 @@ function numberOfCompletedDays(member) {
 
 function calc(leaderboard) {
     const byDay = byMember_to_byDay(leaderboard.members);
-    const numberOfMembers = leaderboard.members.keys().length;
     const deltaByDay = byDay.map(members => members.map(delta));
-    const completedDaysByMember = leaderboard.members.map(numberOfCompletedDays);
-    const timeSpentByMember = deltaByDay.reduce((sumByMember, day) => {
-        return sumByMember.combine(day, (a,b) => {
-            return a && b ? a + b : a ? a : b ? b : 0;
-        });
-    }, {}).map(time => Math.round(time / 360) / 10);
-
     const sortedDeltaByDay = deltaByDay.map(day => {
         return day.reduce((deltas, member, id) => {
             if (member)
                 deltas.push({ id, delta: member });
             return deltas;
-        }, []).sort((a, b) => b.delta - a.delta);
+        }, []).sort((a, b) => a.delta - b.delta);
     });
+    
+    const numberOfMembers = leaderboard.members.keys().length;
     const pointsByDay = sortedDeltaByDay.map(day => {
         let lastDelta = -1;
         let points = numberOfMembers + 1;
@@ -154,81 +148,32 @@ function calc(leaderboard) {
             .reduce((pointsByM, member) => Object.assign(pointsByM, member) , {})
             .combine(points, (a, b) => a && b ? a + b : a ? a : b ? b : 0)
     });
-    return pointsByMember;
-    return timeSpentByMember;
-}
 
-function calculate(leaderboard) {
-    var members = Object.values(leaderboard.members);
-    var ndays = 25;
-
-    const notCompleted = new Set([]);
-    const days = [];
-    /*
-     * [{
-     *  date: number,
-     *  times: [ { name, delta } ]
-     * }]
-     */
-    for(let i = 1; i <= ndays; i++) {
-        const day = { date: i };
-        const times = [];
-        for(let member of members) {
-            const part = member.completion_day_level[i];
-            if (!part || !part[2]) {
-                notCompleted.add(member.name);
-            }
-            else {
-                times.push( {name: member.name, delta: part[2].get_star_ts - part[1].get_star_ts} );
-            }
-        }
-        day.times = times.sort((a,b) => !a.delta ? 1 : !b.delta ? -1 : a.delta - b.delta);
-        days.push(day);
-    }
-
-    // Tally the points, add 0 if no delta available
-    for (let day of days) {
-        let points = members.length;
-        day.times = day.times.map(t => { t.points = (t.delta ? points-- : 0); return t; });
-    }
-
-    let totalPointsPerMember = {}
-    for(let day of days) {
-        for(let time of day.times) {
-            totalPointsPerMember[time.name] = (totalPointsPerMember[time.name] || 0) + time.points;
-        }
-    }
-
-    let totalTimePerMember = {}
-    for(let day of days) {
-        for(let time of day.times) {
-            totalTimePerMember[time.name] = (totalTimePerMember[time.name] || 0) + (time.delta || 0);
-        }
-    }
-
-    let countPart2ByMember = {}
-    for(let day of days) {
-        for(let time of day.times) {
-            countPart2ByMember[time.name] = (countPart2ByMember[time.name] || 0) + 1
-        }
-    }
-
-    let result = [];
-    for(let member of Object.keys(totalPointsPerMember)) {
-        result.push({
-            name: member,
-            points: totalPointsPerMember[member],
-            time_spent: Math.round(totalTimePerMember[member] / 360) / 10,
-            gold_stars: countPart2ByMember[member]
+    const completedDaysByMember = leaderboard.members.map(numberOfCompletedDays);
+    const timeSpentByMember = deltaByDay.reduce((sumByMember, day) => {
+        return sumByMember.combine(day, (a,b) => {
+            return a && b ? a + b : a ? a : b ? b : 0;
         });
-    }
+    }, {}).map(time => Math.round(time / 360) / 10);
 
-    console.log("High Score (delta)");
-    pprint(result.sort((a,b) => b.points - a.points));
-    /* console.log();
-    console.log("Fastest Time (delta)");
-    pprint(result.sort((a,b) => a.total_time_in_h - b.total_time_in_h), notCompleted); */
 
+    return pointsByMember.keys()
+        .map(member => {
+            return {
+                name: leaderboard.members[member].name,
+                points: pointsByMember[member],
+                gold_stars: completedDaysByMember[member],
+                time_spent: timeSpentByMember[member],
+            }
+        }).sort((a, b) => {
+            const deltaPoints = b.points - a.points
+            const deltaStars = b.gold_stars - a.gold_stars
+            const deltaTime = b.time_spent - a.time_spent
+            if (deltaPoints != 0) return deltaPoints;
+            if (deltaStars != 0) return deltaStars;
+            if (deltaTime != 0) return deltaTime;
+            return 0;
+        });
 }
 
 function pprint(listOfObjects, skips) {
@@ -244,6 +189,7 @@ function pprint(listOfObjects, skips) {
         return p;
     }, {});
 
+    
     for(let obj of objects) {
         let row = '';
         if (skips.has(obj.name)) {

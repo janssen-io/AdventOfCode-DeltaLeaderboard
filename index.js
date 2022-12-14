@@ -7,5 +7,6 @@ if (!process.argv[2]) {
 }
 
 fs.readFile(process.argv[2], 'utf8', function(error, data) {
-    delta.calculate(JSON.parse(data));
+    console.log("High Score (delta)");
+    delta.pprint(delta.calc(JSON.parse(data)));
 });
