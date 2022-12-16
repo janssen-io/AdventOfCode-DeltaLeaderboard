@@ -208,8 +208,7 @@ function pprint(listOfObjects, skips) {
 
 
 module.exports = { 
-    calculate
-    , pprint
+    pprint
     , member_to_day
     , byMember_to_byDay
     , calc

@@ -1,3 +1,4 @@
 gen-leaderboard.sh
 *.json
 *.txt
+/node_modules/
